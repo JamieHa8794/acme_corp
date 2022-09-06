@@ -22,6 +22,25 @@ app.get('/api/departments', async (req, res, next)=>{
     }
 })
 
+app.get('/api/employees', async (req, res, next)=>{
+    try{
+        res.send(await Employee.findAll({
+            include: [
+                {
+                    model: Employee,
+                    as: 'supervisor'
+                },
+                {
+                    model: Employee,
+                    as: 'staff'
+                }
+            ]
+    }))
+    }
+    catch(err){
+
+    }
+})
 
 const Department = db.define('department', {
     name :{
@@ -48,19 +67,27 @@ const Employee = db.define('employee',{
 Department.belongsTo(Employee, {as: 'manager'});
 Employee.hasMany(Department, {foreignKey: 'managerId'});
 
+Employee.belongsTo(Employee, {as : 'supervisor'})
+Employee.hasMany(Employee, {foreignKey: 'supervisorId', as: 'staff'})
+
 
 
 const syncAndSeed = async () =>{
     try{
         await db.sync({ force: true })
-        const [moe, lucy, hr, engineering ] = await Promise.all([
+        const [moe, lucy, larry, hr, engineering ] = await Promise.all([
             Employee.create({name : 'Moe'}),
             Employee.create({name : 'Lucy'}),
+            Employee.create({name : 'Larry'}),
             Department.create({name: 'HR'}),
             Department.create({name: 'Engineering'})
         ])
         hr.managerId = lucy.id;
         await hr.save();
+        moe.supervisorId = lucy.id;
+        await moe.save();
+        larry.supervisorId = lucy.id;
+        await larry.save();
     }
     catch(err){
         console.log(err)
