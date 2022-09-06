@@ -2,6 +2,26 @@ const Sequelize = require('sequelize');
 const db = new Sequelize(process.env.DATABASE_URL || 'postgres://localhost/acme_db');
 const { STRING, UUID, UUIDV4 } = Sequelize;
 
+const express = require('express');
+const app = express();
+
+
+app.get('/api/departments', async (req, res, next)=>{
+    try{
+        res.send(await Department.findAll({
+            include: [
+                {
+                    model: Employee,
+                    as: 'manager'
+                }
+            ]
+    }))
+    }
+    catch(err){
+
+    }
+})
+
 
 const Department = db.define('department', {
     name :{
@@ -48,10 +68,13 @@ const syncAndSeed = async () =>{
 }
 
 
+
 const init = async () =>{
     try{
         await db.authenticate();
         await syncAndSeed();
+        const port = process.env.PORT || 3000;
+        app.listen(port, ()=> console.log(`listening on port ${port}`))
     }
     catch(err){
         console.log(err)
