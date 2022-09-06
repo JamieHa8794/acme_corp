@@ -1,19 +1,34 @@
 const Sequelize = require('sequelize');
 const db = new Sequelize(process.env.DATABASE_URL || 'postgres://localhost/acme_db');
-const { STRING } = Sequelize;
+const { STRING, UUID, UUIDV4 } = Sequelize;
 
 
 const Department = db.define('department', {
     name :{
-        type : STRING
+        type : STRING(20),
+        allowNull: false,
+        unique: true        
     }
 });
 
 const Employee = db.define('employee',{
+    id:{
+        type: UUID,
+        primaryKey: true,
+        defaultValue: UUIDV4
+    },
     name :{
-        type : STRING
+        type : STRING(20),
+        allowNull: false,
+        unique: true
     }
 });
+
+
+Department.belongsTo(Employee, {as: 'manager'});
+Employee.hasMany(Department, {foreignKey: 'managerId'});
+
+
 
 const syncAndSeed = async () =>{
     try{
@@ -24,6 +39,8 @@ const syncAndSeed = async () =>{
             Department.create({name: 'HR'}),
             Department.create({name: 'Engineering'})
         ])
+        hr.managerId = lucy.id;
+        await hr.save();
     }
     catch(err){
         console.log(err)
